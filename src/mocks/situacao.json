@@ -1,0 +1,12 @@
+{
+  "bairro": "Bairro de exemplo",
+  "chamadaIniciadaHaMin": 12,
+  "ruas": [
+    { "id": "travessa-7", "nome": "Travessa 7", "status": null, "respondidaHaMin": null },
+    { "id": "rua-nova", "nome": "Rua Nova", "status": null, "respondidaHaMin": null },
+    { "id": "beco-do-rio", "nome": "Beco do Rio", "status": "agua_subindo", "respondidaHaMin": 5 },
+    { "id": "rua-3", "nome": "Rua 3", "status": "tudo_bem", "respondidaHaMin": 11 },
+    { "id": "rua-das-flores", "nome": "Rua das Flores", "status": "tudo_bem", "respondidaHaMin": 9 },
+    { "id": "rua-alta", "nome": "Rua Alta", "status": "preciso_ajuda", "respondidaHaMin": 8 }
+  ]
+}

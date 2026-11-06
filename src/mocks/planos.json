@@ -1,0 +1,50 @@
+[
+  {
+    "ruaId": "travessa-7",
+    "ruaNome": "Travessa 7",
+    "pontoEncontro": "Praça de exemplo, no alto da Rua Alta",
+    "rotaSaida": "Suba pela Rua Alta e evite o Beco do Rio.",
+    "abrigo": "Escola de exemplo (ponto de apoio fictício)",
+    "itensParaLevar": ["Documentos em saco plástico", "Remédios de uso diário", "Lanterna e celular carregado"],
+    "contatos": [
+      { "nome": "Defesa Civil", "telefone": "199" },
+      { "nome": "Bombeiros", "telefone": "193" }
+    ]
+  },
+  {
+    "ruaId": "rua-nova",
+    "ruaNome": "Rua Nova",
+    "pontoEncontro": "Quadra coberta de exemplo",
+    "rotaSaida": "Siga pela Rua 3 até a quadra.",
+    "abrigo": "Quadra coberta de exemplo (ponto de apoio fictício)",
+    "itensParaLevar": ["Documentos em saco plástico", "Água potável", "Lanterna e celular carregado"],
+    "contatos": [
+      { "nome": "Defesa Civil", "telefone": "199" },
+      { "nome": "Bombeiros", "telefone": "193" }
+    ]
+  },
+  {
+    "ruaId": "beco-do-rio",
+    "ruaNome": "Beco do Rio",
+    "pontoEncontro": "Praça de exemplo, no alto da Rua Alta",
+    "rotaSaida": "Saia pelo lado da Rua 3, longe do córrego.",
+    "abrigo": "Escola de exemplo (ponto de apoio fictício)",
+    "itensParaLevar": ["Documentos em saco plástico", "Remédios de uso diário", "Lanterna e celular carregado"],
+    "contatos": [
+      { "nome": "Defesa Civil", "telefone": "199" },
+      { "nome": "Bombeiros", "telefone": "193" }
+    ]
+  },
+  {
+    "ruaId": "rua-3",
+    "ruaNome": "Rua 3",
+    "pontoEncontro": "Quadra coberta de exemplo",
+    "rotaSaida": "Siga reto até a quadra, pela calçada mais alta.",
+    "abrigo": "Quadra coberta de exemplo (ponto de apoio fictício)",
+    "itensParaLevar": ["Documentos em saco plástico", "Água potável", "Lanterna e celular carregado"],
+    "contatos": [
+      { "nome": "Defesa Civil", "telefone": "199" },
+      { "nome": "Bombeiros", "telefone": "193" }
+    ]
+  }
+]
