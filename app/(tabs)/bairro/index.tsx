@@ -20,7 +20,8 @@ import { listarVisitas } from '../../../src/db/visitas';
 import { montarTextoChamarRuas, ordenarRuas, resumirBairro } from '../../../src/domain/chamada';
 import { rotuloDaRua } from '../../../src/domain/estados';
 import { horaComH, textoDuracao } from '../../../src/domain/formatar';
-import { acimaDoLimite, textoRegua } from '../../../src/domain/regua';
+import { acimaDoLimite, intervaloDaRegua, textoRegua } from '../../../src/domain/regua';
+import { useAtualizacaoPeriodica } from '../../../src/hooks/useAtualizacaoPeriodica';
 import { useCarregamento } from '../../../src/hooks/useCarregamento';
 import { useRecarregarAoVoltar } from '../../../src/hooks/useRecarregarAoVoltar';
 import { consultarRegua, consultarSituacaoComLocais } from '../../../src/services/consultas';
@@ -59,6 +60,7 @@ export default function TelaBairro() {
 
   // Ao voltar para a aba, relê: uma resposta guardada em "Agora" ou uma visita marcada na rua mudam a lista.
   useRecarregarAoVoltar(recarregarTudo);
+  useAtualizacaoPeriodica(recarregarRegua, intervaloDaRegua(regua.dados?.dados));
 
   useEffect(
     () => envioAutomatico.ouvir(() => void recarregarSituacao()),

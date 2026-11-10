@@ -71,7 +71,7 @@ vira um só registro.
 }
 ```
 
-O app mostra "acima do limite" quando `nivelMetros >= limiteMetros`.
+O app mostra "acima do limite" quando `nivelMetros >= limiteMetros`. Com a tela aberta, ele busca a régua a cada 30 s, e a cada 10 s acima do limite. Leitura com mais de 5 minutos aparece com a hora da medida, como leitura antiga.
 
 ### `GET /ruas/{id}/plano`
 

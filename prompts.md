@@ -27,5 +27,6 @@ Anotem aqui cada uso de IA durante o projeto. Uma linha por uso.
 | 05/11/2026 | João | Claude Code | Montar o app ligado às APIs escolhidas (esqueleto, telas, banco, serviços e documentação) | Estrutura inteira do app | A conferir |
 | 05/11/2026 | João | Claude Code | Repensar o UX e o UI de todas as telas em um canvas, com referência nos apps do João, e aplicar no app | Tema, módulos, telas, regras novas (resposta em um toque, reenvio automático, "Vou até lá", treino) e testes | Pediu três refações do visual até o padrão minimalista, escolheu a logo de duas argolas e o nome curto Elo. Falta a equipe conferir |
 | 05/11/2026 | João | Claude Code | Montar um PDF explicando a ideia inteira para o grupo decidir se aceita | Texto, layout e calendário sugerido do PDF da proposta, a partir da pesquisa e das regras da GS | A conferir pelo João antes de enviar |
+| 10/11/2026 | João | Claude Code | Fazer a issue #1: aviso no app quando a régua passa do limite | Regra do aviso e testes, atualização periódica da régua, aviso na aba Agora e ajuste do README | A conferir |
 |  |  |  |  |  |  |
 |  |  |  |  |  |  |
