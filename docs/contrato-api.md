@@ -34,7 +34,37 @@ O LINQ do servidor pode ordenar também, para quem consumir sem o app.
 ```
 
 - `chamadaIniciadaEm`: `null` se não há chamada em andamento.
+- **Campos opcionais** (aditivos): veja "Campos opcionais" abaixo. Quem manda só os campos acima continua funcionando.
 - `respondidaEm`: `null` quando `status` é `null`. Resposta de chamada anterior não vale: a rua volta a `null`. É o `criadaEm` recebido no `POST /chamadas`, não a hora do servidor: o app compara os dois para saber se a resposta na tela é a dele.
+
+#### Campos opcionais de `GET /situacao`
+
+Todos podem faltar ou vir `null`. O app confere cada um e deixa de fora o que não passa; o resto da resposta continua valendo.
+Coordenada vai em par: as duas ou nenhuma.
+
+| Onde | Campo | Tipo | O app só aceita |
+| --- | --- | --- | --- |
+| Objeto | `bairroId` | texto | Texto não vazio |
+| Objeto | `cidade` | texto | Texto não vazio |
+| Objeto | `uf` | texto | Duas letras (vira maiúscula) |
+| Objeto | `codigoIbge` | texto | 7 dígitos. É o que vai em `GET /avisos?codigoIbge=` |
+| Objeto | `latitude`, `longitude` | número | Par de números finitos (-90 a 90 e -180 a 180). Centro do bairro |
+| Objeto | `percentualSemApp` | número | De 0 a 100: % de ruas com situação conhecida em 15 minutos num simulado feito **sem o app** |
+| Objeto | `semAppMedidoEm` | ISO 8601 | Data válida, e só junto de `percentualSemApp` |
+| Rua | `latitude`, `longitude` | número | Par de números finitos. Com ele a tela da rua mostra "Ver no mapa" |
+
+```json
+{
+  "bairro": "Jardim Pantanal (simulado)", "chamadaIniciadaEm": "2026-11-12T04:35:00.000Z",
+  "ruas": [{ "id": "7", "nome": "Rua das Palafitas", "status": null, "respondidaEm": null, "latitude": -23.4766, "longitude": -46.4114 }],
+  "bairroId": "1", "cidade": "São Paulo", "uf": "SP", "codigoIbge": "3550308",
+  "latitude": -23.47939, "longitude": -46.40912,
+  "percentualSemApp": 31, "semAppMedidoEm": "2026-09-28T05:00:00.000Z"
+}
+```
+
+Na aba Bairro, com `percentualSemApp`, aparece a linha "Sem o app: 31%, medido em 28/09/2026" ao lado do percentual com o app.
+Sem o campo, a tela fica como estava.
 
 ### `POST /chamadas`
 
@@ -72,6 +102,22 @@ vira um só registro.
 ```
 
 O app mostra "acima do limite" quando `nivelMetros >= limiteMetros`.
+
+Campos opcionais (aditivos), conferidos um a um pelo app; o que não passa fica de fora:
+
+| Campo | Tipo | O app só aceita |
+| --- | --- | --- |
+| `ruaId` | texto | Texto não vazio. Mesmo id do `GET /situacao` |
+| `latitude`, `longitude` | número | Par de números finitos. Posição da régua |
+| `atencaoMetros` | número | Maior que 0 e menor que `limiteMetros`. Com ele, a aba Bairro mostra "em atenção" quando o nível chega a esse valor sem passar do limite |
+
+```json
+{
+  "reguaId": "regua-exemplo", "local": "Córrego do bairro, na ponte da Rua das Palafitas (simulado)",
+  "nivelMetros": 1.42, "limiteMetros": 1.2, "medidaEm": "2026-11-12T04:50:00.000Z",
+  "ruaId": "7", "latitude": -23.476551, "longitude": -46.41135, "atencaoMetros": 1
+}
+```
 
 ### `GET /ruas/{id}/plano`
 
@@ -113,12 +159,23 @@ X-Chave-Dispositivo: <chave do equipamento, guardada no firmware, nunca no repos
 
 | Serviço | Para quê | Observação |
 | --- | --- | --- |
-| INMET `GET https://apiprevmet3.inmet.gov.br/avisos/ativos` | Avisos meteorológicos ativos | Veja abaixo |
+| INMET `GET https://apiprevmet3.inmet.gov.br/avisos/ativos` | Avisos meteorológicos ativos | Só **sem** a API do bairro. Com `EXPO_PUBLIC_API_URL`, o app usa `GET {API}/avisos` (abaixo) |
 | Open-Meteo `GET https://api.open-meteo.com/v1/forecast` | Chuva das próximas 3 horas | Grátis, sem chave |
 | BrasilAPI `GET /api/cep/v2/{cep}` e ViaCEP `GET /ws/{cep}/json/` | CEP para área e código IBGE | ViaCEP é reserva |
 | IBGE `GET /api/v1/localidades/municipios/{codigo}/distritos` | Distritos do município | Grátis, sem chave |
 
-### Recomendação para a API própria: filtrar o INMET
+### `GET /avisos?codigoIbge=` (a API do bairro já faz isso)
+
+Com `EXPO_PUBLIC_API_URL` definido (e sem `EXPO_PUBLIC_USE_MOCK=true`), o app não chama o INMET: pede
+`GET {API}/avisos?codigoIbge=<área>` e usa a lista direto, sem passar pela `normalizarAvisos`.
+O app confere cada item (`id`, `titulo`, `severidade`, `gravidade` de 1 a 3, `inicio`, `fim`, `quando` e listas de texto
+em `riscos` e `instrucoes`) e descarta o que estiver fora do formato. Resposta que não é uma lista conta como falha.
+`[]` é válido: nenhum aviso para o município.
+
+O cache e o comportamento sem internet são os de antes: se a API falhar, a tela mostra a última lista guardada,
+e aviso que já acabou sai da lista. Sem a API, o app segue com o INMET direto.
+
+### Recomendação original: filtrar o INMET
 
 A resposta de `avisos/ativos` tem **cerca de 580 KB** para o Brasil inteiro (polígonos, ícones em base64, lista de todos os
 municípios de cada aviso). Em celular com rede ruim isso demora e gasta o pacote de dados do morador.
