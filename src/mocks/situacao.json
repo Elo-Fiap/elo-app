@@ -1,12 +1,20 @@
 {
-  "bairro": "Bairro de exemplo",
+  "bairro": "Jardim Pantanal (simulado)",
+  "bairroId": "1",
+  "cidade": "São Paulo",
+  "uf": "SP",
+  "codigoIbge": "3550308",
+  "latitude": -23.47939,
+  "longitude": -46.40912,
+  "percentualSemApp": 31,
+  "semAppMedidoEm": "2026-09-28T05:00:00.000Z",
   "chamadaIniciadaHaMin": 12,
   "ruas": [
     { "id": "travessa-7", "nome": "Travessa 7", "status": null, "respondidaHaMin": null },
     { "id": "rua-nova", "nome": "Rua Nova", "status": null, "respondidaHaMin": null },
-    { "id": "beco-do-rio", "nome": "Beco do Rio", "status": "agua_subindo", "respondidaHaMin": 5 },
-    { "id": "rua-3", "nome": "Rua 3", "status": "tudo_bem", "respondidaHaMin": 11 },
-    { "id": "rua-das-flores", "nome": "Rua das Flores", "status": "tudo_bem", "respondidaHaMin": 9 },
-    { "id": "rua-alta", "nome": "Rua Alta", "status": "preciso_ajuda", "respondidaHaMin": 8 }
+    { "id": "beco-do-rio", "nome": "Beco do Rio", "status": "agua_subindo", "respondidaHaMin": 5, "latitude": -23.4768, "longitude": -46.4118 },
+    { "id": "rua-3", "nome": "Rua 3", "status": "tudo_bem", "respondidaHaMin": 11, "latitude": -23.4771, "longitude": -46.4109 },
+    { "id": "rua-das-flores", "nome": "Rua das Flores", "status": "tudo_bem", "respondidaHaMin": 9, "latitude": -23.4759, "longitude": -46.4121 },
+    { "id": "rua-alta", "nome": "Rua Alta", "status": "preciso_ajuda", "respondidaHaMin": 8, "latitude": -23.4755, "longitude": -46.4103 }
   ]
 }

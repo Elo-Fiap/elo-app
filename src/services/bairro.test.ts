@@ -28,6 +28,22 @@ describe('modo de exemplo (sem API_URL)', () => {
     expect(r.medidaEm).toBe('2026-11-05T14:58:00.000Z');
   });
 
+  it('traz os dados do piloto: bairro, sem o app, coordenadas', async () => {
+    const s = await buscarSituacaoBairro(agora);
+    expect(s).toMatchObject({
+      bairro: 'Jardim Pantanal (simulado)', bairroId: '1', cidade: 'São Paulo', uf: 'SP', codigoIbge: '3550308',
+      latitude: -23.47939, longitude: -46.40912, percentualSemApp: 31, semAppMedidoEm: '2026-09-28T05:00:00.000Z',
+    });
+    // Parte das ruas fica sem coordenada, para a tela esconder "Ver no mapa".
+    expect(s.ruas.filter((r) => r.latitude !== undefined).length).toBeGreaterThan(0);
+    expect(s.ruas.find((r) => r.id === 'travessa-7')).not.toHaveProperty('latitude');
+  });
+
+  it('régua traz rua, posição e nível de atenção do piloto', async () => {
+    const r = await buscarLeituraRegua(agora);
+    expect(r).toMatchObject({ ruaId: '7', latitude: -23.476551, longitude: -46.41135, atencaoMetros: 1 });
+  });
+
   it('plano da rua; rua sem plano dá "nao_encontrado"', async () => {
     expect((await buscarPlanoRua('travessa-7')).ruaNome).toBe('Travessa 7');
     await expect(buscarPlanoRua('rua-alta')).rejects.toMatchObject({ tipo: 'nao_encontrado' });
@@ -103,5 +119,118 @@ describe('com API_URL', () => {
   it('régua lê o JSON da API', async () => {
     simularFetch(() => respostaJson({ reguaId: 'r', local: 'L', nivelMetros: 0.5, limiteMetros: 1, medidaEm: '2026-11-05T15:00:00Z' }));
     expect((await buscarLeituraRegua()).nivelMetros).toBe(0.5);
+  });
+
+  describe('campos novos de /situacao', () => {
+    const base = {
+      bairro: 'B',
+      chamadaIniciadaEm: null,
+      ruas: [{ id: '7', nome: 'Rua das Palafitas', status: null, respondidaEm: null }],
+    };
+    const completo = {
+      ...base,
+      ruas: [{ ...base.ruas[0], latitude: -23.4766, longitude: -46.4114 }],
+      bairroId: '1', cidade: 'São Paulo', uf: 'SP', codigoIbge: '3550308',
+      latitude: -23.47939, longitude: -46.40912, percentualSemApp: 31, semAppMedidoEm: '2026-09-28T05:00:00.000Z',
+    };
+
+    it('campos bons passam', async () => {
+      simularFetch(() => respostaJson(completo));
+      const s = await buscarSituacaoBairro(agora);
+      expect(s).toEqual(completo);
+    });
+
+    it('resposta antiga, sem os campos novos, continua válida e sem chaves extras', async () => {
+      simularFetch(() => respostaJson(base));
+      const s = await buscarSituacaoBairro(agora);
+      expect(s).toEqual({ bairro: 'B', chamadaIniciadaEm: null, ruas: base.ruas });
+      expect(Object.keys(s.ruas[0]).sort()).toEqual(['id', 'nome', 'respondidaEm', 'status']);
+    });
+
+    it('null da API (ausente) vira campo de fora', async () => {
+      simularFetch(() =>
+        respostaJson({
+          ...base, bairroId: '1', cidade: 'São Paulo', uf: null, codigoIbge: null, latitude: null, longitude: null,
+          percentualSemApp: null, semAppMedidoEm: null,
+        }),
+      );
+      const s = await buscarSituacaoBairro(agora);
+      expect(s).toEqual({ ...base, bairroId: '1', cidade: 'São Paulo' });
+    });
+
+    it('campo ruim fica de fora, os bons ficam', async () => {
+      simularFetch(() =>
+        respostaJson({
+          ...completo,
+          uf: 'São Paulo', codigoIbge: '355030', bairroId: 1,
+          percentualSemApp: 131, semAppMedidoEm: '2026-09-28T05:00:00.000Z',
+        }),
+      );
+      const s = await buscarSituacaoBairro(agora);
+      expect(s).not.toHaveProperty('uf');
+      expect(s).not.toHaveProperty('codigoIbge');
+      expect(s).not.toHaveProperty('bairroId');
+      // Percentual fora de 0 a 100 cai, e a data junto: sozinha ela não quer dizer nada.
+      expect(s).not.toHaveProperty('percentualSemApp');
+      expect(s).not.toHaveProperty('semAppMedidoEm');
+      expect(s.cidade).toBe('São Paulo');
+      expect(s.latitude).toBe(-23.47939);
+    });
+
+    it.each([
+      ['só a latitude', { latitude: -23.4, longitude: undefined }],
+      ['texto', { latitude: '-23.4', longitude: '-46.4' }],
+      ['NaN ou infinito', { latitude: Number.POSITIVE_INFINITY, longitude: -46.4 }],
+      ['fora do planeta', { latitude: 95, longitude: -46.4 }],
+    ])('coordenada do bairro ruim (%s): nenhuma entra', async (_nome, coord) => {
+      simularFetch(() => respostaJson({ ...completo, ...coord }));
+      const s = await buscarSituacaoBairro(agora);
+      expect(s).not.toHaveProperty('latitude');
+      expect(s).not.toHaveProperty('longitude');
+    });
+
+    it('coordenada ruim na rua não derruba a rua', async () => {
+      simularFetch(() => respostaJson({ ...base, ruas: [{ ...base.ruas[0], latitude: -23.4 }] }));
+      const s = await buscarSituacaoBairro(agora);
+      expect(s.ruas).toEqual(base.ruas);
+    });
+
+    it('percentual 0 e 100 valem; data inválida some, o percentual fica', async () => {
+      simularFetch(() => respostaJson({ ...base, percentualSemApp: 0, semAppMedidoEm: 'ontem' }));
+      expect(await buscarSituacaoBairro(agora)).toMatchObject({ percentualSemApp: 0 });
+      simularFetch(() => respostaJson({ ...base, percentualSemApp: 100 }));
+      const s = await buscarSituacaoBairro(agora);
+      expect(s.percentualSemApp).toBe(100);
+      expect(s).not.toHaveProperty('semAppMedidoEm');
+    });
+  });
+
+  describe('campos novos de /regua', () => {
+    const base = { reguaId: 'r', local: 'L', nivelMetros: 0.5, limiteMetros: 1.2, medidaEm: '2026-11-05T15:00:00Z' };
+
+    it('campos bons passam', async () => {
+      simularFetch(() => respostaJson({ ...base, ruaId: '7', latitude: -23.476551, longitude: -46.41135, atencaoMetros: 1 }));
+      expect(await buscarLeituraRegua()).toEqual({
+        ...base, ruaId: '7', latitude: -23.476551, longitude: -46.41135, atencaoMetros: 1,
+      });
+    });
+
+    it('resposta antiga continua válida', async () => {
+      simularFetch(() => respostaJson(base));
+      expect(await buscarLeituraRegua()).toEqual(base);
+    });
+
+    it('atenção igual ou acima do limite, zero ou texto: fica de fora', async () => {
+      for (const atencaoMetros of [1.2, 1.5, 0, -1, '1', Number.NaN]) {
+        simularFetch(() => respostaJson({ ...base, atencaoMetros }));
+        expect(await buscarLeituraRegua()).not.toHaveProperty('atencaoMetros');
+      }
+    });
+
+    it('posição só em par e ruaId vazio fica de fora', async () => {
+      simularFetch(() => respostaJson({ ...base, ruaId: ' ', latitude: -23.4, longitude: null }));
+      const r = await buscarLeituraRegua();
+      expect(r).toEqual(base);
+    });
   });
 });

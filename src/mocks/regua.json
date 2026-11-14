@@ -1,7 +1,11 @@
 {
   "reguaId": "regua-exemplo",
-  "local": "Córrego do bairro de exemplo",
+  "local": "Córrego do bairro, na ponte da Rua das Palafitas (simulado)",
   "nivelMetros": 1.42,
   "limiteMetros": 1.2,
-  "medidaHaMin": 2
+  "medidaHaMin": 2,
+  "ruaId": "7",
+  "latitude": -23.476551,
+  "longitude": -46.41135,
+  "atencaoMetros": 1
 }

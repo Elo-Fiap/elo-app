@@ -54,6 +54,9 @@ export interface Rua {
   status: StatusChamada | null;
   /** ISO 8601 de quando a rua respondeu. Null junto com `status` null. */
   respondidaEm: string | null;
+  /** Posição de referência da rua. Vêm sempre em par; ausentes se a API não sabe. */
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Chamada {
@@ -75,6 +78,20 @@ export interface SituacaoBairro {
   /** Quando o coordenador iniciou a chamada. Null = nenhuma chamada em andamento. */
   chamadaIniciadaEm: string | null;
   ruas: Rua[];
+  // Campos opcionais: a API antiga não os manda, e um valor fora do formato é descartado.
+  bairroId?: string;
+  cidade?: string;
+  /** Sigla em maiúsculas, ex.: "SP". */
+  uf?: string;
+  /** Município, 7 dígitos. É o que vai em `GET /avisos?codigoIbge=`. */
+  codigoIbge?: string;
+  /** Centro do bairro. Vêm sempre em par. */
+  latitude?: number;
+  longitude?: number;
+  /** De 0 a 100: % de ruas com situação conhecida em 15 min num simulado sem o app. */
+  percentualSemApp?: number;
+  /** ISO 8601 de quando o simulado sem o app foi medido. Só vem junto do percentual. */
+  semAppMedidoEm?: string;
 }
 
 export interface ResumoBairro {
@@ -96,6 +113,13 @@ export interface LeituraRegua {
   nivelMetros: number;
   limiteMetros: number;
   medidaEm: string;
+  /** Rua onde a régua está (mesmo id de `GET /situacao`). */
+  ruaId?: string;
+  /** Posição da régua. Vêm sempre em par. */
+  latitude?: number;
+  longitude?: number;
+  /** Nível de atenção em metros, sempre menor que `limiteMetros`. */
+  atencaoMetros?: number;
 }
 
 export interface ContatoEmergencia {
