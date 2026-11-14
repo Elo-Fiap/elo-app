@@ -1,7 +1,7 @@
-import { config } from '../config';
+import { config, usaApiDoBairro } from '../config';
 import { avisosDeExemplo } from '../mocks/inmet';
 import type { Aviso, SeveridadeAviso } from '../types';
-import { getJson } from './http';
+import { ErroServico, getJson } from './http';
 import { converterListaPython } from './listaPython';
 
 export const URL_AVISOS_ATIVOS = 'https://apiprevmet3.inmet.gov.br/avisos/ativos';
@@ -92,7 +92,47 @@ export function normalizarAvisos(json: unknown, codigoIbge: string): Aviso[] {
     .sort((a, b) => b.gravidade - a.gravidade || instante(a.inicio) - instante(b.inicio));
 }
 
+function listaDeTexto(valor: unknown): string[] {
+  return Array.isArray(valor) ? valor.filter((t): t is string => typeof t === 'string') : [];
+}
+
+function dataValida(valor: unknown): valor is string {
+  return typeof valor === 'string' && !Number.isNaN(Date.parse(valor));
+}
+
+/** Confere um item da lista da API. Item fora do formato é descartado, e os outros continuam. */
+function lerAvisoDaApi(item: unknown): Aviso | null {
+  if (!ehObjeto(item)) return null;
+  const { id, titulo, severidade, gravidade, inicio, fim, quando } = item;
+  if (typeof id !== 'string' || id === '' || typeof titulo !== 'string') return null;
+  if (severidade !== 'Perigo Potencial' && severidade !== 'Perigo' && severidade !== 'Grande Perigo') return null;
+  if (gravidade !== 1 && gravidade !== 2 && gravidade !== 3) return null;
+  if (!dataValida(inicio) || !dataValida(fim)) return null;
+  if (quando !== 'hoje' && quando !== 'futuro') return null;
+  return {
+    id,
+    titulo,
+    severidade,
+    gravidade,
+    inicio,
+    fim,
+    quando,
+    riscos: listaDeTexto(item.riscos),
+    instrucoes: listaDeTexto(item.instrucoes),
+  };
+}
+
+/** `GET {API}/avisos` já devolve a lista no formato `Aviso`: só conferir, sem `normalizarAvisos`. */
+export function validarAvisosDaApi(json: unknown): Aviso[] {
+  if (!Array.isArray(json)) throw new ErroServico('resposta_invalida', 'Avisos fora do formato');
+  return json.map(lerAvisoDaApi).filter((a): a is Aviso => a !== null);
+}
+
 export async function buscarAvisos(codigoIbge: string, agora: Date = new Date()): Promise<Aviso[]> {
+  if (usaApiDoBairro()) {
+    const caminho = `${config.apiUrl}/avisos?codigoIbge=${encodeURIComponent(codigoIbge.trim())}`;
+    return validarAvisosDaApi(await getJson<unknown>(caminho));
+  }
   const json = config.usarMock
     ? avisosDeExemplo(codigoIbge, agora)
     : await getJson<unknown>(URL_AVISOS_ATIVOS, { timeoutMs: TIMEOUT_INMET_MS });
