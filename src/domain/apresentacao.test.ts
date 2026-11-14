@@ -13,8 +13,9 @@ import {
   quandoSalvo,
   textoDuracao,
   textoHa,
+  textoSemApp,
 } from './formatar';
-import { acimaDoLimite, textoRegua } from './regua';
+import { acimaDoLimite, emAtencao, textoRegua } from './regua';
 import { semToqueDuplo } from './toque';
 import type { Aviso } from '../types';
 
@@ -74,6 +75,30 @@ describe('régua', () => {
 
   it('textoRegua mostra nível e limite', () => {
     expect(textoRegua({ nivelMetros: 1.42, limiteMetros: 1.2 })).toBe('1,42 m, limite 1,20 m');
+  });
+
+  it('atenção usa atencaoMetros quando vem, e só abaixo do limite', () => {
+    const l = { limiteMetros: 1.2, atencaoMetros: 1 };
+    expect(emAtencao({ ...l, nivelMetros: 0.99 })).toBe(false);
+    expect(emAtencao({ ...l, nivelMetros: 1 })).toBe(true);
+    expect(emAtencao({ ...l, nivelMetros: 1.19 })).toBe(true);
+    expect(emAtencao({ ...l, nivelMetros: 1.2 })).toBe(false);
+  });
+
+  it('sem atencaoMetros não há atenção', () => {
+    expect(emAtencao({ nivelMetros: 1.1, limiteMetros: 1.2 })).toBe(false);
+  });
+});
+
+describe('textoSemApp', () => {
+  it('percentual com a data da medida', () => {
+    expect(textoSemApp(31, '2026-09-28T15:00:00.000Z')).toBe('31%, medido em 28/09/2026');
+  });
+
+  it('sem data, ou com data inválida, só o percentual', () => {
+    expect(textoSemApp(31)).toBe('31%');
+    expect(textoSemApp(31, 'ontem')).toBe('31%');
+    expect(textoSemApp(31.5)).toBe('31,5%');
   });
 });
 
