@@ -1,4 +1,5 @@
 import { config } from '../config';
+import avisosDaApiReal from './__fixtures__/api-avisos.json';
 import fixture from './__fixtures__/inmet-ativos.json';
 import { buscarAvisos, normalizarAvisos, URL_AVISOS_ATIVOS } from './inmet';
 import { respostaJson, simularFetch } from './testes';
@@ -118,6 +119,13 @@ describe('buscarAvisos', () => {
       expect(f).toHaveBeenCalledTimes(1);
       expect(f.mock.calls[0][0]).toBe('https://api.test/api/avisos?codigoIbge=3550308');
       expect(avisos).toEqual([avisoDaApi]);
+    });
+
+    it('resposta real da API em C# passa inteira pela conferência', async () => {
+      simularFetch(() => respostaJson(avisosDaApiReal));
+      const avisos = await buscarAvisos(SAO_PAULO);
+      expect(avisos).toHaveLength(avisosDaApiReal.length);
+      expect(avisos.map((a) => a.id)).toEqual(avisosDaApiReal.map((a) => a.id));
     });
 
     it('lista vazia é válida: nenhum aviso para o município', async () => {

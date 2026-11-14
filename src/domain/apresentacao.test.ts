@@ -98,7 +98,8 @@ describe('textoSemApp', () => {
   it('sem data, ou com data inválida, só o percentual', () => {
     expect(textoSemApp(31)).toBe('31%');
     expect(textoSemApp(31, 'ontem')).toBe('31%');
-    expect(textoSemApp(31.5)).toBe('31,5%');
+    expect(textoSemApp(31.4)).toBe('31%');
+    expect(textoSemApp(31.6)).toBe('32%');
   });
 });
 

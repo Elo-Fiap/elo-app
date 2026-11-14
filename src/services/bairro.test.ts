@@ -1,6 +1,8 @@
 import { config } from '../config';
 import type { Chamada } from '../types';
 import { buscarLeituraRegua, buscarPlanoRua, buscarSituacaoBairro, enviarChamada } from './bairro';
+import reguaReal from './__fixtures__/api-regua.json';
+import situacaoReal from './__fixtures__/api-situacao.json';
 import { respostaJson, simularFetch } from './testes';
 
 const agora = new Date('2026-11-05T15:00:00.000Z');
@@ -39,9 +41,9 @@ describe('modo de exemplo (sem API_URL)', () => {
     expect(s.ruas.find((r) => r.id === 'travessa-7')).not.toHaveProperty('latitude');
   });
 
-  it('régua traz rua, posição e nível de atenção do piloto', async () => {
+  it('régua traz posição e nível de atenção do piloto', async () => {
     const r = await buscarLeituraRegua(agora);
-    expect(r).toMatchObject({ ruaId: '7', latitude: -23.476551, longitude: -46.41135, atencaoMetros: 1 });
+    expect(r).toMatchObject({ latitude: -23.476551, longitude: -46.41135, atencaoMetros: 1 });
   });
 
   it('plano da rua; rua sem plano dá "nao_encontrado"', async () => {
@@ -231,6 +233,28 @@ describe('com API_URL', () => {
       simularFetch(() => respostaJson({ ...base, ruaId: ' ', latitude: -23.4, longitude: null }));
       const r = await buscarLeituraRegua();
       expect(r).toEqual(base);
+    });
+  });
+
+  // Respostas gravadas da API em C# (elo-api-csharp, branch feat/painel-admin), com a semente do piloto.
+  describe('resposta real da API em C#', () => {
+    it('/situacao: lê bairro, "sem o app" e a posição de todas as ruas', async () => {
+      simularFetch(() => respostaJson(situacaoReal));
+      const s = await buscarSituacaoBairro(agora);
+      expect(s).toMatchObject({
+        bairro: 'Jardim Pantanal (simulado)', bairroId: '1', cidade: 'São Paulo', uf: 'SP', codigoIbge: '3550308',
+        percentualSemApp: 31, semAppMedidoEm: situacaoReal.semAppMedidoEm,
+      });
+      expect(s.ruas).toHaveLength(situacaoReal.ruas.length);
+      expect(s.ruas.every((r) => typeof r.latitude === 'number' && typeof r.longitude === 'number')).toBe(true);
+      expect(s.ruas.find((r) => r.id === '7')).toMatchObject({ nome: 'Rua das Palafitas', status: null });
+    });
+
+    it('/regua: lê rua, posição e nível de atenção', async () => {
+      simularFetch(() => respostaJson(reguaReal));
+      expect(await buscarLeituraRegua()).toMatchObject({
+        reguaId: 'regua-exemplo', limiteMetros: 1.2, atencaoMetros: 1, ruaId: '7', latitude: -23.476551, longitude: -46.41135,
+      });
     });
   });
 });

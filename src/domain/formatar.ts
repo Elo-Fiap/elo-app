@@ -115,10 +115,10 @@ export function textoDuracao(iso: string | null, agora: Date): string {
   return horas === 1 ? '1 hora' : `${horas} horas`;
 }
 
-/** "31%" ou "31%, medido em 28/09/2026". A data some se não vale. */
+/** "31%" ou "31%, medido em 28/09/2026", arredondado para inteiro. A data some se não vale. */
 export function textoSemApp(percentual: number, medidoEm?: string): string {
   const d = medidoEm ? lerData(medidoEm) : null;
-  const valor = `${String(percentual).replace('.', ',')}%`;
+  const valor = `${Math.round(percentual)}%`;
   if (!d) return valor;
   return `${valor}, medido em ${doisDigitos(d.getDate())}/${doisDigitos(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
