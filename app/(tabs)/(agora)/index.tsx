@@ -25,7 +25,14 @@ import { estadoDaAgora, textoDoBairro } from '../../../src/domain/agora';
 import { textoDosAvisos } from '../../../src/domain/avisoTexto';
 import { ROTULO_STATUS, juntarChamadasLocais } from '../../../src/domain/chamada';
 import { formatarMilimetros, horaComH } from '../../../src/domain/formatar';
-import { avisoDaRegua, intervaloDaRegua, valorDaLeitura } from '../../../src/domain/regua';
+import {
+  ANUNCIO_INICIAL,
+  avisoDaRegua,
+  decidirAnuncio,
+  intervaloDaRegua,
+  valorDaRegua,
+  type EstadoDoAnuncio,
+} from '../../../src/domain/regua';
 import { useAreaAtual } from '../../../src/hooks/useAreaAtual';
 import { useAtualizacaoPeriodica } from '../../../src/hooks/useAtualizacaoPeriodica';
 import { useCarregamento, type ResultadoCarregamento } from '../../../src/hooks/useCarregamento';
@@ -45,7 +52,7 @@ import {
 import { envioAutomatico } from '../../../src/services/envioAutomatico';
 import { mensagemDoErro } from '../../../src/services/http';
 import { useTheme } from '../../../src/theme';
-import type { Area, Aviso, Chamada, LeituraRegua, PrevisaoChuva, SituacaoBairro, StatusChamada } from '../../../src/types';
+import type { Area, Aviso, Chamada, PrevisaoChuva, SituacaoBairro, StatusChamada } from '../../../src/types';
 
 // Depois de responder, a tela muda e "Mudar resposta" cai perto de onde estava a resposta.
 // Esta pausa impede que o segundo toque de um toque duplo desfaça a resposta recém-guardada.
@@ -60,11 +67,6 @@ function valorDoAviso(avisos: Carregado<Aviso[]>): string {
     return textoDosAvisos(velho && avisos.dados.dados.length === 0 ? null : avisos.dados.dados);
   }
   return avisos.erro ? textoDosAvisos(null) : 'Buscando…';
-}
-
-function valorDaRegua(regua: Carregado<LeituraRegua>): string {
-  if (regua.dados) return valorDaLeitura(regua.dados.dados, new Date());
-  return regua.erro ? 'Sem leitura agora' : 'Buscando…';
 }
 
 function valorDaChuva(chuva: ResultadoCarregamento<ResultadoComCache<PrevisaoChuva> | null>): string {
@@ -144,18 +146,24 @@ function ConteudoAgora({ area }: { area: Area }) {
   const leitura = regua.dados?.dados;
   useAtualizacaoPeriodica(recarregarRegua, intervaloDaRegua(leitura));
 
-  // Cada estado da tela é uma árvore própria: o anúncio fica aqui para não repetir ao trocar de estado.
+  // Cada estado da tela é uma árvore própria: o anúncio e a vibração ficam aqui para não repetir ao trocar de estado.
+  // `estadoDoAnuncio` guarda a última leitura tratada; só leitura nova anuncia ou vibra (ver `decidirAnuncio`).
   const dadosDoAviso = leitura ? avisoDaRegua(leitura, new Date(), !usaApiDoBairro()) : null;
-  const tituloDoAviso = dadosDoAviso?.titulo;
-  const apoioDoAviso = dadosDoAviso?.apoio;
-  const avisoUrgente = dadosDoAviso?.urgente ?? false;
+  const estadoDoAnuncio = useRef<EstadoDoAnuncio>(ANUNCIO_INICIAL);
+  const buscandoRegua = regua.carregando;
   useEffect(() => {
-    if (!tituloDoAviso) return;
-    AccessibilityInfo.announceForAccessibility(`${tituloDoAviso}. ${apoioDoAviso}`);
-    if (avisoUrgente) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => undefined);
-    // Só quando o aviso muda de situação; o texto de hora muda a cada leitura e não deve repetir o anúncio.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tituloDoAviso]);
+    const decisao = decidirAnuncio(
+      estadoDoAnuncio.current,
+      leitura ? { medidaEm: leitura.medidaEm, aviso: dadosDoAviso } : null,
+      buscandoRegua,
+      Date.now(),
+    );
+    estadoDoAnuncio.current = decisao.proximo;
+    if (decisao.anunciar && dadosDoAviso) {
+      AccessibilityInfo.announceForAccessibility(`${dadosDoAviso.titulo}. ${dadosDoAviso.apoio}`);
+    }
+    if (decisao.vibrar) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => undefined);
+  });
 
   useEffect(
     () =>
@@ -237,7 +245,13 @@ function ConteudoAgora({ area }: { area: Area }) {
     setMudando(false);
   }
 
-  const topo = <Topo rotulo={rua?.nome ?? area.nome} onTrocar={() => router.push('/area')} />;
+  // O aviso da régua fica no topo: aparece em todos os estados, inclusive carregando e erro.
+  const topo = (
+    <>
+      <Topo rotulo={rua?.nome ?? area.nome} onTrocar={() => router.push('/area')} />
+      {dadosDoAviso ? <AvisoRegua aviso={dadosDoAviso} onVerPlano={() => router.navigate('/plano')} /> : null}
+    </>
+  );
 
   // 1. Sem dado da situação: o atalho de Emergência continua no topo.
   if (!dadosSituacao || !ruaPronta || (locais.dados === undefined && locais.carregando)) {
@@ -261,9 +275,8 @@ function ConteudoAgora({ area }: { area: Area }) {
 
   const exemplo = avisoDeExemplo();
   const dadoAviso = <Dado rotulo="Aviso" valor={valorDoAviso(avisos)} onPress={() => router.push('/aviso')} />;
-  const dadoRegua = <Dado rotulo="Régua" valor={valorDaRegua(regua)} />;
+  const dadoRegua = <Dado rotulo="Régua" valor={valorDaRegua(leitura, regua.erro !== null, new Date())} />;
   const dadoBairro = <Dado rotulo="Bairro" valor={textoDoBairro(situacaoJunta)} />;
-  const avisoRegua = dadosDoAviso ? <AvisoRegua aviso={dadosDoAviso} onVerPlano={() => router.navigate('/plano')} /> : null;
 
   // 7. Treino com resposta.
   if (treino?.resposta) {
@@ -316,7 +329,6 @@ function ConteudoAgora({ area }: { area: Area }) {
         }
       >
         {topo}
-        {avisoRegua}
         <Titulo titulo="Como está sua rua agora?" apoio={apoio} tomApoio={!treino && !mudando ? 'silencio' : 'apoio'} />
         <Dados>
           {dadoAviso}
@@ -342,7 +354,6 @@ function ConteudoAgora({ area }: { area: Area }) {
     return (
       <Tela key="calma" onAtualizar={atualizarTudo}>
         {topo}
-        {avisoRegua}
         <Titulo titulo="Nenhuma chamada aberta." apoio="Quando precisar, o Elo pergunta." />
         <Dados>
           {dadoAviso}
@@ -371,7 +382,6 @@ function ConteudoAgora({ area }: { area: Area }) {
         }
       >
         {topo}
-        {avisoRegua}
         <Titulo titulo="Qual é a sua rua?" apoio="Escolha a rua para responder à chamada." />
         <Dados>
           {dadoAviso}
@@ -404,7 +414,6 @@ function ConteudoAgora({ area }: { area: Area }) {
         }
       >
         {topo}
-        {avisoRegua}
         <Animated.View entering={FadeIn.duration(movimento.medio)}>
           <Titulo
             variante="destaque"
@@ -447,7 +456,6 @@ function ConteudoAgora({ area }: { area: Area }) {
       }
     >
       {topo}
-      {avisoRegua}
       <Animated.View entering={FadeIn.duration(movimento.medio)}>
         <Titulo variante="destaque" titulo="Guardado." apoio="Sai sozinho quando a internet voltar." />
       </Animated.View>

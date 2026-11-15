@@ -19,8 +19,8 @@ import { avisoDeExemplo, config, usaApiDoBairro } from '../../../src/config';
 import { listarVisitas } from '../../../src/db/visitas';
 import { montarTextoChamarRuas, ordenarRuas, resumirBairro } from '../../../src/domain/chamada';
 import { rotuloDaRua } from '../../../src/domain/estados';
-import { horaComH, textoDuracao, textoSemApp } from '../../../src/domain/formatar';
-import { acimaDoLimite, emAtencao, intervaloDaRegua, textoRegua } from '../../../src/domain/regua';
+import { textoDuracao, textoSemApp } from '../../../src/domain/formatar';
+import { intervaloDaRegua, notaDaMedida, valorDaRegua } from '../../../src/domain/regua';
 import { useAtualizacaoPeriodica } from '../../../src/hooks/useAtualizacaoPeriodica';
 import { useCarregamento } from '../../../src/hooks/useCarregamento';
 import { useRecarregarAoVoltar } from '../../../src/hooks/useRecarregarAoVoltar';
@@ -28,13 +28,6 @@ import { consultarRegua, consultarSituacaoComLocais } from '../../../src/service
 import { envioAutomatico } from '../../../src/services/envioAutomatico';
 import { mensagemDoErro } from '../../../src/services/http';
 import { abrirWhatsApp } from '../../../src/services/mensagens';
-import type { LeituraRegua } from '../../../src/types';
-
-function valorDaRegua(regua: LeituraRegua | undefined, falhou: boolean): string {
-  if (!regua) return falhou ? 'Sem leitura agora' : 'Buscando…';
-  if (acimaDoLimite(regua.nivelMetros, regua.limiteMetros)) return `${textoRegua(regua)}, acima do limite`;
-  return emAtencao(regua) ? `${textoRegua(regua)}, em atenção` : textoRegua(regua);
-}
 
 export default function TelaBairro() {
   const router = useRouter();
@@ -97,10 +90,11 @@ export default function TelaBairro() {
       </Rodape>
     ) : undefined;
 
-  const reguaDado = <Dado rotulo="Régua" valor={valorDaRegua(regua.dados?.dados, falhouRegua)} />;
+  const reguaDado = <Dado rotulo="Régua" valor={valorDaRegua(regua.dados?.dados, falhouRegua, agora)} />;
+  const textoDaMedida = regua.dados ? notaDaMedida(regua.dados.dados.medidaEm, agora) : '';
   const notaDaRegua = regua.dados ? (
     <>
-      {regua.dados.dados.medidaEm ? <Nota>{`Medida às ${horaComH(regua.dados.dados.medidaEm)}`}</Nota> : null}
+      {textoDaMedida ? <Nota>{textoDaMedida}</Nota> : null}
       <DadoSalvo resultado={regua.dados} falhouAgora={falhouRegua} />
     </>
   ) : null;

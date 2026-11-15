@@ -11,7 +11,13 @@ export function AvisoRegua({ aviso, onVerPlano }: { aviso: AvisoDaRegua; onVerPl
   const { movimento } = useTheme();
   return (
     <Animated.View entering={FadeIn.duration(movimento.medio)} className="mt-4">
-      <View accessible accessibilityLabel={`${aviso.titulo}. ${aviso.apoio}`} className="gap-1">
+      <View
+        accessible
+        accessibilityRole="alert"
+        accessibilityLiveRegion="polite"
+        accessibilityLabel={`${aviso.titulo}. ${aviso.apoio}`}
+        className="gap-1"
+      >
         <Texto variante="subtitulo">{aviso.titulo}</Texto>
         <Texto tom="apoio">{aviso.apoio}</Texto>
       </View>
