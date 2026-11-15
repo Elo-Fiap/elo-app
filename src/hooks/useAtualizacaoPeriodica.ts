@@ -4,7 +4,7 @@ import { AppState, type AppStateStatus, type NativeEventSubscription } from 'rea
 
 /** O que o relógio precisa saber do app: se está aberto e quando muda. */
 export interface FonteDoEstadoDoApp {
-  currentState: AppStateStatus;
+  currentState: string | null | undefined;
   addEventListener(tipo: 'change', ouvinte: (estado: AppStateStatus) => void): Pick<NativeEventSubscription, 'remove'>;
 }
 
