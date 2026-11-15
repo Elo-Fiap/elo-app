@@ -83,7 +83,7 @@ export interface SituacaoBairro {
   cidade?: string;
   /** Sigla em maiúsculas, ex.: "SP". */
   uf?: string;
-  /** Município, 7 dígitos. É o que vai em `GET /avisos?codigoIbge=`. */
+  /** Município do bairro, 7 dígitos. Só informativo: os avisos seguem a área escolhida no aparelho. */
   codigoIbge?: string;
   /** Centro do bairro. Vêm sempre em par. */
   latitude?: number;

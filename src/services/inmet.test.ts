@@ -148,6 +148,11 @@ describe('buscarAvisos', () => {
       expect(avisos.map((a) => a.id)).toEqual(['56273']);
     });
 
+    it('lista com itens e nenhum no formato dá erro, em vez de "nenhum aviso"', async () => {
+      simularFetch(() => respostaJson([{ ...avisoDaApi, gravidade: '2' }, { ...avisoDaApi, quando: 'agora' }]));
+      await expect(buscarAvisos(SAO_PAULO)).rejects.toMatchObject({ tipo: 'resposta_invalida' });
+    });
+
     it('resposta que não é lista dá erro tipado (a tela usa o dado guardado)', async () => {
       simularFetch(() => respostaJson({ hoje: [], futuro: [] }));
       await expect(buscarAvisos(SAO_PAULO)).rejects.toMatchObject({ tipo: 'resposta_invalida' });

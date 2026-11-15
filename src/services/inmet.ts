@@ -122,10 +122,18 @@ function lerAvisoDaApi(item: unknown): Aviso | null {
   };
 }
 
-/** `GET {API}/avisos` já devolve a lista no formato `Aviso`: só conferir, sem `normalizarAvisos`. */
+/**
+ * `GET {API}/avisos` já devolve a lista no formato `Aviso`: só conferir, sem `normalizarAvisos`.
+ * Se a lista tem itens e nenhum passa, o formato mudou: é erro, para a tela manter o último aviso
+ * guardado em vez de mostrar "nenhum aviso".
+ */
 export function validarAvisosDaApi(json: unknown): Aviso[] {
   if (!Array.isArray(json)) throw new ErroServico('resposta_invalida', 'Avisos fora do formato');
-  return json.map(lerAvisoDaApi).filter((a): a is Aviso => a !== null);
+  const avisos = json.map(lerAvisoDaApi).filter((a): a is Aviso => a !== null);
+  if (json.length > 0 && avisos.length === 0) {
+    throw new ErroServico('resposta_invalida', 'Nenhum aviso no formato esperado');
+  }
+  return avisos;
 }
 
 export async function buscarAvisos(codigoIbge: string, agora: Date = new Date()): Promise<Aviso[]> {

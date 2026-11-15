@@ -16,7 +16,8 @@ export function temPosicao(rua: RuaComPosicao): rua is RuaComPosicao & { latitud
 export function urlDoMapa(rua: RuaComPosicao, sistema: string = Platform.OS): string | null {
   if (!temPosicao(rua)) return null;
   const ponto = `${rua.latitude},${rua.longitude}`;
-  const nome = encodeURIComponent(rua.nome);
+  // Parênteses também, porque no Android o nome vai entre parênteses.
+  const nome = encodeURIComponent(rua.nome).replace(/\(/g, '%28').replace(/\)/g, '%29');
   return sistema === 'ios' ? `maps:?ll=${ponto}&q=${nome}` : `geo:${ponto}?q=${ponto}(${nome})`;
 }
 

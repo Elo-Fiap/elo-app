@@ -16,7 +16,10 @@ describe('urlDoMapa', () => {
   });
 
   it('nome com & ou parênteses não quebra o endereço', () => {
-    expect(urlDoMapa({ ...rua, nome: 'Rua A & B (2)' }, 'ios')).toContain('q=Rua%20A%20%26%20B%20(2)');
+    expect(urlDoMapa({ ...rua, nome: 'Rua A & B (2)' }, 'ios')).toContain('q=Rua%20A%20%26%20B%20%282%29');
+    expect(urlDoMapa({ ...rua, nome: 'Rua A (2)' }, 'android')).toBe(
+      'geo:-23.4766,-46.4114?q=-23.4766,-46.4114(Rua%20A%20%282%29)',
+    );
   });
 
   it('sem coordenada, sem endereço', () => {

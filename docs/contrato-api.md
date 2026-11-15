@@ -47,7 +47,7 @@ Coordenada vai em par: as duas ou nenhuma.
 | Objeto | `bairroId` | texto | Texto não vazio |
 | Objeto | `cidade` | texto | Texto não vazio |
 | Objeto | `uf` | texto | Duas letras (vira maiúscula) |
-| Objeto | `codigoIbge` | texto | 7 dígitos. É o que vai em `GET /avisos?codigoIbge=` |
+| Objeto | `codigoIbge` | texto | 7 dígitos. Município do bairro, só informativo: os avisos seguem a área escolhida no aparelho (CEP ou padrão) |
 | Objeto | `latitude`, `longitude` | número | Par de números finitos (-90 a 90 e -180 a 180). Centro do bairro |
 | Objeto | `percentualSemApp` | número | De 0 a 100: % de ruas com situação conhecida em 15 minutos num simulado feito **sem o app** |
 | Objeto | `semAppMedidoEm` | ISO 8601 | Data válida, e só junto de `percentualSemApp` |
@@ -63,7 +63,7 @@ Coordenada vai em par: as duas ou nenhuma.
 }
 ```
 
-Na aba Bairro, com `percentualSemApp`, aparece a linha "Sem o app: 31%, medido em 28/09/2026" ao lado do percentual com o app.
+Na aba Bairro, com `percentualSemApp`, aparece a linha "Sem o app: 31%, medido em 28/09/2026" ao lado do percentual com o app, no bloco da chamada aberta.
 Sem o campo, a tela fica como estava.
 
 ### `POST /chamadas`
