@@ -14,7 +14,7 @@ export function AvisoRegua({ aviso, onVerPlano }: { aviso: AvisoDaRegua; onVerPl
       <View
         accessible
         accessibilityRole="alert"
-        accessibilityLiveRegion="polite"
+        // Sem região viva: o anúncio vem só de decidirAnuncio, para não repetir quando o texto muda pelo tempo.
         accessibilityLabel={`${aviso.titulo}. ${aviso.apoio}`}
         className="gap-1"
       >
