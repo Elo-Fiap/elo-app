@@ -101,7 +101,7 @@ vira um só registro.
 }
 ```
 
-O app mostra "acima do limite" quando `nivelMetros >= limiteMetros`. Com a tela aberta, ele busca a régua a cada 30 s, e a cada 10 s acima do limite. Leitura com mais de 5 minutos aparece com a hora da medida, como leitura antiga.
+O app mostra "acima do limite" quando `nivelMetros >= limiteMetros`. Nas abas Agora e Bairro, com a tela aberta, ele busca a régua a cada 30 s, e a cada 10 s acima do limite, sem começar uma busca nova enquanto a anterior não terminou. Leitura com mais de 5 minutos aparece com a hora da medida, como leitura antiga, e não faz o celular vibrar. A aba Agora vibra e anuncia só quando chega leitura nova acima do limite, no máximo uma vez a cada 5 minutos. O app compara `medidaEm` com o relógio do celular: medida até 2 minutos à frente conta como de agora; mais que isso, o app diz que a hora da medida não confere com a do celular e não trata como urgente. Por isso o ESP32 precisa mandar `medidaEm` certo.
 
 Campos opcionais (aditivos), conferidos um a um pelo app; o que não passa fica de fora:
 
