@@ -3,5 +3,8 @@
   "local": "Córrego do bairro de exemplo",
   "nivelMetros": 1.42,
   "limiteMetros": 1.2,
-  "medidaHaMin": 2
+  "medidaHaMin": 2,
+  "latitude": -23.476551,
+  "longitude": -46.41135,
+  "atencaoMetros": 1
 }

@@ -26,8 +26,52 @@ function url(caminho: string): string {
   return `${config.apiUrl}${caminho}`;
 }
 
+// Campos opcionais (aditivos): conferência rígida. Se o valor não passa, o campo fica de fora,
+// e a resposta continua valendo. Resposta antiga, sem eles, é válida.
+
+function numeroFinito(valor: unknown): valor is number {
+  return typeof valor === 'number' && Number.isFinite(valor);
+}
+
+function textoNaoVazio(valor: unknown): valor is string {
+  return typeof valor === 'string' && valor.trim() !== '';
+}
+
+function dataValida(valor: unknown): valor is string {
+  return textoNaoVazio(valor) && !Number.isNaN(Date.parse(valor));
+}
+
+/** Coordenada vai em par: as duas valem ou nenhuma entra. */
+function lerCoordenadas(latitude: unknown, longitude: unknown): { latitude?: number; longitude?: number } {
+  if (!numeroFinito(latitude) || !numeroFinito(longitude)) return {};
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return {};
+  return { latitude, longitude };
+}
+
+type CamposDoBairro = Partial<
+  Pick<
+    SituacaoBairro,
+    'bairroId' | 'cidade' | 'uf' | 'codigoIbge' | 'latitude' | 'longitude' | 'percentualSemApp' | 'semAppMedidoEm'
+  >
+>;
+
+function lerCamposDoBairro(j: Record<string, unknown>): CamposDoBairro {
+  const campos: CamposDoBairro = {};
+  if (textoNaoVazio(j.bairroId)) campos.bairroId = j.bairroId;
+  if (textoNaoVazio(j.cidade)) campos.cidade = j.cidade;
+  if (typeof j.uf === 'string' && /^[A-Za-z]{2}$/.test(j.uf)) campos.uf = j.uf.toUpperCase();
+  if (typeof j.codigoIbge === 'string' && /^\d{7}$/.test(j.codigoIbge)) campos.codigoIbge = j.codigoIbge;
+  Object.assign(campos, lerCoordenadas(j.latitude, j.longitude));
+  if (numeroFinito(j.percentualSemApp) && j.percentualSemApp >= 0 && j.percentualSemApp <= 100) {
+    campos.percentualSemApp = j.percentualSemApp;
+    // A data só tem sentido junto do percentual.
+    if (dataValida(j.semAppMedidoEm)) campos.semAppMedidoEm = j.semAppMedidoEm;
+  }
+  return campos;
+}
+
 function validarSituacao(json: unknown): SituacaoBairro {
-  const j = json as Partial<SituacaoBairro> | null;
+  const j = json as (Partial<SituacaoBairro> & Record<string, unknown>) | null;
   if (!j || !Array.isArray(j.ruas) || typeof j.bairro !== 'string') {
     throw new ErroServico('resposta_invalida', 'Situação do bairro fora do formato');
   }
@@ -36,12 +80,27 @@ function validarSituacao(json: unknown): SituacaoBairro {
     nome: String(r.nome),
     status: ehStatusChamada(r.status) ? r.status : null,
     respondidaEm: ehStatusChamada(r.status) && r.respondidaEm ? r.respondidaEm : null,
+    ...lerCoordenadas(r.latitude, r.longitude),
   }));
   return {
     bairro: j.bairro,
     chamadaIniciadaEm: j.chamadaIniciadaEm ?? null,
     ruas,
+    ...lerCamposDoBairro(j),
   };
+}
+
+type CamposDaRegua = Partial<Pick<LeituraRegua, 'ruaId' | 'latitude' | 'longitude' | 'atencaoMetros'>>;
+
+function lerCamposDaRegua(j: Record<string, unknown>, limiteMetros: number): CamposDaRegua {
+  const campos: CamposDaRegua = {};
+  if (textoNaoVazio(j.ruaId)) campos.ruaId = j.ruaId;
+  Object.assign(campos, lerCoordenadas(j.latitude, j.longitude));
+  // O nível de atenção só faz sentido abaixo do limite.
+  if (numeroFinito(j.atencaoMetros) && j.atencaoMetros > 0 && j.atencaoMetros < limiteMetros) {
+    campos.atencaoMetros = j.atencaoMetros;
+  }
+  return campos;
 }
 
 function validarPlano(json: unknown): PlanoRua {
@@ -63,15 +122,18 @@ function validarPlano(json: unknown): PlanoRua {
 export async function buscarSituacaoBairro(agora: Date = ABERTURA_DO_APP): Promise<SituacaoBairro> {
   if (usaApiDoBairro()) return validarSituacao(await getJson<unknown>(url('/situacao')));
 
+  const { ruas, chamadaIniciadaHaMin, ...bairro } = situacaoMock;
   return {
-    bairro: situacaoMock.bairro,
-    chamadaIniciadaEm: haMinutos(agora, situacaoMock.chamadaIniciadaHaMin),
-    ruas: situacaoMock.ruas.map((r) => ({
+    bairro: bairro.bairro,
+    chamadaIniciadaEm: haMinutos(agora, chamadaIniciadaHaMin),
+    ruas: ruas.map((r) => ({
       id: r.id,
       nome: r.nome,
       status: ehStatusChamada(r.status) ? r.status : null,
       respondidaEm: r.respondidaHaMin === null ? null : haMinutos(agora, r.respondidaHaMin),
+      ...lerCoordenadas((r as { latitude?: unknown }).latitude, (r as { longitude?: unknown }).longitude),
     })),
+    ...lerCamposDoBairro(bairro),
   };
 }
 
@@ -90,7 +152,7 @@ export async function enviarChamada(chamada: Chamada): Promise<void> {
 
 export async function buscarLeituraRegua(agora: Date = new Date()): Promise<LeituraRegua> {
   if (usaApiDoBairro()) {
-    const j = await getJson<Partial<LeituraRegua>>(url('/regua'));
+    const j = await getJson<Record<string, unknown> | null>(url('/regua'));
     if (typeof j?.nivelMetros !== 'number' || typeof j.limiteMetros !== 'number') {
       throw new ErroServico('resposta_invalida', 'Leitura da régua fora do formato');
     }
@@ -100,10 +162,11 @@ export async function buscarLeituraRegua(agora: Date = new Date()): Promise<Leit
       nivelMetros: j.nivelMetros,
       limiteMetros: j.limiteMetros,
       medidaEm: String(j.medidaEm ?? ''),
+      ...lerCamposDaRegua(j, j.limiteMetros),
     };
   }
   const { medidaHaMin, ...resto } = reguaMock;
-  return { ...resto, medidaEm: haMinutos(agora, medidaHaMin) };
+  return { ...resto, medidaEm: haMinutos(agora, medidaHaMin), ...lerCamposDaRegua(resto, resto.limiteMetros) };
 }
 
 /** Plano de evacuação da rua. Rua sem plano: erro `nao_encontrado` (a tela mostra o estado vazio). */
