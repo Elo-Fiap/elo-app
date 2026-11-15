@@ -19,8 +19,8 @@ import { avisoDeExemplo, config, usaApiDoBairro } from '../../../src/config';
 import { listarVisitas } from '../../../src/db/visitas';
 import { montarTextoChamarRuas, ordenarRuas, resumirBairro } from '../../../src/domain/chamada';
 import { rotuloDaRua } from '../../../src/domain/estados';
-import { horaComH, textoDuracao } from '../../../src/domain/formatar';
-import { acimaDoLimite, intervaloDaRegua, textoRegua } from '../../../src/domain/regua';
+import { horaComH, textoDuracao, textoSemApp } from '../../../src/domain/formatar';
+import { acimaDoLimite, emAtencao, intervaloDaRegua, textoRegua } from '../../../src/domain/regua';
 import { useAtualizacaoPeriodica } from '../../../src/hooks/useAtualizacaoPeriodica';
 import { useCarregamento } from '../../../src/hooks/useCarregamento';
 import { useRecarregarAoVoltar } from '../../../src/hooks/useRecarregarAoVoltar';
@@ -32,9 +32,8 @@ import type { LeituraRegua } from '../../../src/types';
 
 function valorDaRegua(regua: LeituraRegua | undefined, falhou: boolean): string {
   if (!regua) return falhou ? 'Sem leitura agora' : 'Buscando…';
-  return acimaDoLimite(regua.nivelMetros, regua.limiteMetros)
-    ? `${textoRegua(regua)}, acima do limite`
-    : textoRegua(regua);
+  if (acimaDoLimite(regua.nivelMetros, regua.limiteMetros)) return `${textoRegua(regua)}, acima do limite`;
+  return emAtencao(regua) ? `${textoRegua(regua)}, em atenção` : textoRegua(regua);
 }
 
 export default function TelaBairro() {
@@ -156,6 +155,9 @@ export default function TelaBairro() {
 
           <Dados>
             <Dado rotulo={`Em ${config.janelaMinutos} minutos`} valor={textoNaJanela(ruas, bairro.chamadaIniciadaEm)} />
+            {bairro.percentualSemApp !== undefined ? (
+              <Dado rotulo="Sem o app" valor={textoSemApp(bairro.percentualSemApp, bairro.semAppMedidoEm)} />
+            ) : null}
             {reguaDado}
           </Dados>
           {notaDaRegua}

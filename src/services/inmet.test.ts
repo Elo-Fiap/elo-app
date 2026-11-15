@@ -1,4 +1,5 @@
 import { config } from '../config';
+import avisosDaApiReal from './__fixtures__/api-avisos.json';
 import fixture from './__fixtures__/inmet-ativos.json';
 import { buscarAvisos, normalizarAvisos, URL_AVISOS_ATIVOS } from './inmet';
 import { respostaJson, simularFetch } from './testes';
@@ -81,6 +82,7 @@ describe('normalizarAvisos (casos de borda)', () => {
 describe('buscarAvisos', () => {
   afterEach(() => {
     config.usarMock = false;
+    config.apiUrl = '';
   });
 
   it('chama a URL do INMET e normaliza', async () => {
@@ -98,5 +100,76 @@ describe('buscarAvisos', () => {
     expect(avisos.length).toBeGreaterThan(0);
     expect(avisos[0].gravidade).toBe(2);
     expect(avisos[0].inicio.startsWith('2026-11-05')).toBe(true);
+  });
+
+  describe('com a API do bairro', () => {
+    const avisoDaApi = {
+      id: '56273', titulo: 'Tempestade', severidade: 'Perigo', gravidade: 2,
+      inicio: '2026-11-05T00:01:00-03:00', fim: '2026-11-05T23:59:00-03:00', quando: 'hoje',
+      riscos: ['Chuva entre 30 e 60 mm/h'], instrucoes: ['Evite usar aparelhos eletrônicos ligados à tomada.'],
+    };
+
+    beforeEach(() => {
+      config.apiUrl = 'https://api.test/api';
+    });
+
+    it('chama /avisos?codigoIbge= e usa a lista direto, sem normalizar', async () => {
+      const f = simularFetch(() => respostaJson([avisoDaApi]));
+      const avisos = await buscarAvisos(SAO_PAULO);
+      expect(f).toHaveBeenCalledTimes(1);
+      expect(f.mock.calls[0][0]).toBe('https://api.test/api/avisos?codigoIbge=3550308');
+      expect(avisos).toEqual([avisoDaApi]);
+    });
+
+    it('resposta real da API em C# passa inteira pela conferência', async () => {
+      simularFetch(() => respostaJson(avisosDaApiReal));
+      const avisos = await buscarAvisos(SAO_PAULO);
+      expect(avisos).toHaveLength(avisosDaApiReal.length);
+      expect(avisos.map((a) => a.id)).toEqual(avisosDaApiReal.map((a) => a.id));
+    });
+
+    it('lista vazia é válida: nenhum aviso para o município', async () => {
+      simularFetch(() => respostaJson([]));
+      await expect(buscarAvisos(SAO_PAULO)).resolves.toEqual([]);
+    });
+
+    it('descarta o item fora do formato e mantém os bons', async () => {
+      simularFetch(() =>
+        respostaJson([
+          avisoDaApi,
+          { ...avisoDaApi, id: 'x', gravidade: 9 },
+          { ...avisoDaApi, id: 'y', quando: 'ontem' },
+          { ...avisoDaApi, id: 'z', inicio: 'nunca' },
+          null,
+          'texto',
+        ]),
+      );
+      const avisos = await buscarAvisos(SAO_PAULO);
+      expect(avisos.map((a) => a.id)).toEqual(['56273']);
+    });
+
+    it('lista com itens e nenhum no formato dá erro, em vez de "nenhum aviso"', async () => {
+      simularFetch(() => respostaJson([{ ...avisoDaApi, gravidade: '2' }, { ...avisoDaApi, quando: 'agora' }]));
+      await expect(buscarAvisos(SAO_PAULO)).rejects.toMatchObject({ tipo: 'resposta_invalida' });
+    });
+
+    it('resposta que não é lista dá erro tipado (a tela usa o dado guardado)', async () => {
+      simularFetch(() => respostaJson({ hoje: [], futuro: [] }));
+      await expect(buscarAvisos(SAO_PAULO)).rejects.toMatchObject({ tipo: 'resposta_invalida' });
+    });
+
+    it('API fora do ar dá erro, sem cair no INMET', async () => {
+      const f = simularFetch(() => respostaJson({}, 503));
+      await expect(buscarAvisos(SAO_PAULO)).rejects.toMatchObject({ tipo: 'status', status: 503 });
+      expect(f).toHaveBeenCalledTimes(1);
+    });
+
+    it('com mock forçado, ignora a API e usa os avisos de exemplo', async () => {
+      config.usarMock = true;
+      const f = simularFetch(() => respostaJson([]));
+      const avisos = await buscarAvisos(SAO_PAULO, new Date('2026-11-05T15:00:00Z'));
+      expect(f).not.toHaveBeenCalled();
+      expect(avisos.length).toBeGreaterThan(0);
+    });
   });
 });

@@ -26,6 +26,7 @@ import { useCarregamento } from '../../../src/hooks/useCarregamento';
 import { useRecarregarAoVoltar } from '../../../src/hooks/useRecarregarAoVoltar';
 import { consultarPlano, consultarSituacaoComLocais } from '../../../src/services/consultas';
 import { ErroServico, mensagemDoErro } from '../../../src/services/http';
+import { abrirNoMapa, temPosicao } from '../../../src/services/mapas';
 import { abrirWhatsApp } from '../../../src/services/mensagens';
 import type { Rua } from '../../../src/types';
 
@@ -109,6 +110,12 @@ export default function TelaRua() {
     }
   }
 
+  async function verNoMapa() {
+    if (!(await abrirNoMapa(rua!))) {
+      Alert.alert('Não foi possível abrir o mapa', 'Instale um app de mapas ou procure a rua pelo nome.');
+    }
+  }
+
   async function vouAteLa() {
     try {
       await marcarVisita(rua!.id, chamadaIniciadaEm!);
@@ -161,6 +168,16 @@ export default function TelaRua() {
       ) : (
         <Estado tipo="carregando" titulo="Abrindo o plano…" />
       )}
+
+      {temPosicao(rua) ? (
+        <Botao
+          variante="texto"
+          titulo="Ver no mapa"
+          onPress={verNoMapa}
+          accessibilityLabel={`Ver ${rua.nome} no mapa`}
+          accessibilityHint="Abre o app de mapas"
+        />
+      ) : null}
 
       <DadoSalvo resultado={situacao.dados} falhouAgora={situacao.erro !== null} />
       {exemplo ? <Nota>{exemplo}</Nota> : null}

@@ -94,12 +94,14 @@ Só serviços gratuitos e sem chave. O acesso à rede fica em `src/services`; as
 
 | Fonte | Uso | Real ou exemplo |
 | --- | --- | --- |
-| INMET (`apiprevmet3.inmet.gov.br/avisos/ativos`) | Avisos de chuva por município | **Real**. Com `EXPO_PUBLIC_USE_MOCK=true`, vira aviso fictício. |
+| INMET (`apiprevmet3.inmet.gov.br/avisos/ativos`) | Avisos de chuva por município | **Real**. Com `EXPO_PUBLIC_API_URL`, o app pede à API do bairro (`GET /avisos?codigoIbge=`), que já filtra o município (algumas centenas de bytes em vez de 580 KB). Com `EXPO_PUBLIC_USE_MOCK=true`, vira aviso fictício. |
 | Open-Meteo | Chuva prevista nas próximas 3 horas | **Real**. Com `EXPO_PUBLIC_USE_MOCK=true`, vira previsão fictícia. |
 | BrasilAPI e ViaCEP | CEP para nome da área, código IBGE e coordenadas | **Real**, sempre. |
 | IBGE (serviço de localidades) | Distritos de São Paulo | **Real**, sempre. |
-| API do bairro (C#) | Situação das ruas, envio da chamada, régua d'água e plano da rua | **Exemplo**. A API ainda não existe; os dados vêm de `src/mocks` e são fictícios. O contrato proposto está em [`docs/contrato-api.md`](docs/contrato-api.md). |
-| Sensor ESP32 (régua d'água) | Nível da água | **Exemplo**, repassado pela API do bairro. |
+| API do bairro (C#, repositório `elo-api-csharp`) | Situação das ruas (com percentual "sem o app" e coordenadas), envio da chamada, régua d'água, plano da rua e avisos | **Real** com `EXPO_PUBLIC_API_URL` (por exemplo `http://<ip-da-maquina>:5080`). Sem ela, os dados vêm de `src/mocks` e são fictícios. Contrato em [`docs/contrato-api.md`](docs/contrato-api.md). |
+| Sensor ESP32 (régua d'água) | Nível da água, com nível de atenção, limite e posição | **Real** quando a API tem leituras; a régua chega ao app pelo `GET /regua` da API, nunca direto. Sem API, exemplo. |
+
+Com `EXPO_PUBLIC_API_URL`, os dados do bairro são reais e as telas deixam de dizer "exemplo". Na aba Bairro, quando há chamada aberta, aparece a linha "Sem o app" (o percentual medido antes do Elo, para comparar com o "Em 15 minutos"), a régua mostra "em atenção" quando a API manda o nível de atenção, e a tela da rua ganha "Ver no mapa" se a API mandou a posição da rua. Todos esses campos são opcionais: com uma API antiga, o app funciona como antes.
 
 As ruas, o bairro e os planos de exemplo são inventados: nenhum dado pessoal real. Dado de exemplo nunca parece real: as telas dizem isso em uma linha de texto, a resposta não aparece como enviada a um servidor e as mensagens de SMS e WhatsApp saem com a palavra "EXEMPLO". Na ausência do `.env`, os avisos e a chuva são reais e só os dados do bairro são de exemplo.
 
@@ -156,7 +158,10 @@ Tirados no simulador de iPhone. Os avisos vêm do INMET; as ruas e os números d
 - **Sem push remoto no Expo Go.** O app não recebe notificação com o app fechado; o aviso chega pela abertura do app ou pelo WhatsApp do bairro.
 - **O JSON do INMET é pesado** (cerca de 580 KB, com polígonos). Em rede ruim a busca pode demorar, e por isso o último aviso fica guardado no celular.
 - **O app não envia SMS sozinho.** Ele abre o app de mensagens do aparelho com o texto pronto, e a pessoa escolhe o destinatário. Aparelho sem SMS (tablet, simulador) mostra uma mensagem clara.
-- **A API do bairro é de exemplo.** Os caminhos reais (`/situacao`, `/chamadas`, `/regua`, `/ruas/{id}/plano`) são uma proposta que os colegas de C# precisam validar.
+- **A API do bairro precisa estar no ar para os dados serem reais.** Ela existe (`elo-api-csharp`), mas o app só a usa com `EXPO_PUBLIC_API_URL`; no celular, use o IP da máquina na mesma rede (`http://<ip-da-maquina>:5080`), não `localhost`. Sem ela, os dados são de exemplo.
+- **Sem login e sem chave por aparelho.** Quem tem o endereço da API lê a situação do bairro e envia chamadas. A chave existe só para o ESP32.
+- **"Sem o app" é um valor medido uma vez**, num simulado, e vem pronto da API: o app só mostra. "Ver no mapa" abre o app de mapas do aparelho e depende da posição que a API guarda para a rua; rua sem coordenada não tem o botão.
+- **A régua é uma só no app.** Mesmo com várias na API, o `GET /regua` devolve a régua padrão do bairro.
 - **Sem internet na primeira vez**, não há lista de ruas para escolher, e a chamada não pode ser feita: a lista precisa ser carregada uma vez com internet. Nesse caso, ligue 199 ou 193.
 - A previsão por distrito (sem CEP) usa o centro de São Paulo, por isso é aproximada.
 - Enxurrada rápida não dá tempo de chamada: o Elo serve para água que sobe aos poucos.
