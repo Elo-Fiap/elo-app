@@ -1,3 +1,4 @@
+export { AvisoRegua } from './AvisoRegua';
 export { Botao } from './Botao';
 export { Campo } from './Campo';
 export { Dado, Dados } from './Dados';

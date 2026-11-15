@@ -61,9 +61,9 @@ Navegação com Expo Router (`app/`), em TypeScript, com quatro abas (Agora, Bai
 | Rota | Tela | O que faz |
 | --- | --- | --- |
 | `inicio` | Primeiro uso | Escolhe a rua, ou "Coordeno o bairro inteiro". Só aparece uma vez. |
-| `(tabs)/(agora)/index` | Agora | Com chamada aberta, as três respostas em um toque. Depois de responder, "Recebido." ou "Guardado.", com "Mudar resposta". Sem chamada, aviso, chuva, régua e "Treinar a chamada". |
+| `(tabs)/(agora)/index` | Agora | Com chamada aberta, as três respostas em um toque. Depois de responder, "Recebido." ou "Guardado.", com "Mudar resposta". Sem chamada, aviso, chuva, régua e "Treinar a chamada". Quando a régua passa do limite, a leitura aparece no alto, em qualquer estado da tela, com atalho para o Plano. O celular vibra só com leitura nova, no máximo a cada 5 minutos. |
 | `(tabs)/(agora)/aviso` | Detalhe do aviso | Avisos do INMET, o que fazer, riscos, chuva das próximas 3 horas e envio pelo WhatsApp. |
-| `(tabs)/bairro/index` | Bairro | "4 de 6" ruas, lista com quem pediu ajuda primeiro, indicador de 15 minutos, régua e "Chamar as 2 ruas". |
+| `(tabs)/bairro/index` | Bairro | "4 de 6" ruas, lista com quem pediu ajuda primeiro, indicador de 15 minutos, régua (mesma regra da aba Agora: leitura antiga mostra a hora, e hora que não confere com a do celular é avisada) e "Chamar as 2 ruas". |
 | `(tabs)/bairro/[id]` | Rua | Situação, ponto de encontro, rota de saída, "Chamar no WhatsApp" e "Vou até lá". |
 | `(tabs)/plano` | Plano da rua | Rota, encontro, abrigo e o que levar. Abre sem internet. |
 | `(tabs)/registro/index` | Registro | Respostas guardadas no SQLite, por mês, pendentes, "Tentar enviar de novo" e "Apagar registro". |
@@ -135,7 +135,7 @@ Escolhemos o **SQLite** (`expo-sqlite`) porque funciona **sem internet**, que é
 
 ## Aderência ao tema
 
-O app serve ao ODS 11 (meta 11.5, reduzir mortes e perdas por desastres) e ao ODS 13 (meta 13.1, resiliência a riscos do clima). O indicador de impacto aparece na tela Bairro: percentual de ruas com situação conhecida em 15 minutos. O app **não cria alertas próprios**: ele leva o aviso oficial (INMET) até a rua e sempre mostra 199 (Defesa Civil) e 193 (Bombeiros).
+O app serve ao ODS 11 (meta 11.5, reduzir mortes e perdas por desastres) e ao ODS 13 (meta 13.1, resiliência a riscos do clima). O indicador de impacto aparece na tela Bairro: percentual de ruas com situação conhecida em 15 minutos. O app **não cria alertas de chuva próprios**: ele leva o aviso oficial (INMET) até a rua e sempre mostra 199 (Defesa Civil) e 193 (Bombeiros). O aviso da régua é outra coisa: é a medição do sensor no local, mostrada como leitura, e só aparece com o app aberto. Leitura com mais de 5 minutos, ou com a hora que não confere com a do celular, aparece sem vibrar.
 
 ## Prints
 

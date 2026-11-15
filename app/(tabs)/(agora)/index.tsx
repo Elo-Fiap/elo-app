@@ -5,6 +5,7 @@ import { AccessibilityInfo, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import {
+  AvisoRegua,
   Botao,
   Dado,
   Dados,
@@ -24,8 +25,16 @@ import { estadoDaAgora, textoDoBairro } from '../../../src/domain/agora';
 import { textoDosAvisos } from '../../../src/domain/avisoTexto';
 import { ROTULO_STATUS, juntarChamadasLocais } from '../../../src/domain/chamada';
 import { formatarMilimetros, horaComH } from '../../../src/domain/formatar';
-import { textoRegua } from '../../../src/domain/regua';
+import {
+  ANUNCIO_INICIAL,
+  avisoDaRegua,
+  decidirAnuncio,
+  intervaloDaRegua,
+  valorDaRegua,
+  type EstadoDoAnuncio,
+} from '../../../src/domain/regua';
 import { useAreaAtual } from '../../../src/hooks/useAreaAtual';
+import { useAtualizacaoPeriodica } from '../../../src/hooks/useAtualizacaoPeriodica';
 import { useCarregamento, type ResultadoCarregamento } from '../../../src/hooks/useCarregamento';
 import { useConexao } from '../../../src/hooks/useConexao';
 import { useEnvioManual } from '../../../src/hooks/useEnvioManual';
@@ -43,7 +52,7 @@ import {
 import { envioAutomatico } from '../../../src/services/envioAutomatico';
 import { mensagemDoErro } from '../../../src/services/http';
 import { useTheme } from '../../../src/theme';
-import type { Area, Aviso, Chamada, LeituraRegua, PrevisaoChuva, SituacaoBairro, StatusChamada } from '../../../src/types';
+import type { Area, Aviso, Chamada, PrevisaoChuva, SituacaoBairro, StatusChamada } from '../../../src/types';
 
 // Depois de responder, a tela muda e "Mudar resposta" cai perto de onde estava a resposta.
 // Esta pausa impede que o segundo toque de um toque duplo desfaça a resposta recém-guardada.
@@ -58,11 +67,6 @@ function valorDoAviso(avisos: Carregado<Aviso[]>): string {
     return textoDosAvisos(velho && avisos.dados.dados.length === 0 ? null : avisos.dados.dados);
   }
   return avisos.erro ? textoDosAvisos(null) : 'Buscando…';
-}
-
-function valorDaRegua(regua: Carregado<LeituraRegua>): string {
-  if (regua.dados) return textoRegua(regua.dados.dados);
-  return regua.erro ? 'Sem leitura agora' : 'Buscando…';
 }
 
 function valorDaChuva(chuva: ResultadoCarregamento<ResultadoComCache<PrevisaoChuva> | null>): string {
@@ -138,6 +142,28 @@ function ConteudoAgora({ area }: { area: Area }) {
     [recarregarSituacao, recarregarLocais, recarregarRegua],
   );
   useRecarregarAoVoltar(recarregarAoVoltar);
+
+  const leitura = regua.dados?.dados;
+  useAtualizacaoPeriodica(recarregarRegua, intervaloDaRegua(leitura));
+
+  // Cada estado da tela é uma árvore própria: o anúncio e a vibração ficam aqui para não repetir ao trocar de estado.
+  // `estadoDoAnuncio` guarda a última leitura tratada; só leitura nova anuncia ou vibra (ver `decidirAnuncio`).
+  const dadosDoAviso = leitura ? avisoDaRegua(leitura, new Date(), !usaApiDoBairro()) : null;
+  const estadoDoAnuncio = useRef<EstadoDoAnuncio>(ANUNCIO_INICIAL);
+  const buscandoRegua = regua.carregando;
+  useEffect(() => {
+    const decisao = decidirAnuncio(
+      estadoDoAnuncio.current,
+      leitura ? { medidaEm: leitura.medidaEm, aviso: dadosDoAviso } : null,
+      buscandoRegua,
+      Date.now(),
+    );
+    estadoDoAnuncio.current = decisao.proximo;
+    if (decisao.anunciar && dadosDoAviso) {
+      AccessibilityInfo.announceForAccessibility(`${dadosDoAviso.titulo}. ${dadosDoAviso.apoio}`);
+    }
+    if (decisao.vibrar) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => undefined);
+  });
 
   useEffect(
     () =>
@@ -219,7 +245,13 @@ function ConteudoAgora({ area }: { area: Area }) {
     setMudando(false);
   }
 
-  const topo = <Topo rotulo={rua?.nome ?? area.nome} onTrocar={() => router.push('/area')} />;
+  // O aviso da régua fica no topo: aparece em todos os estados, inclusive carregando e erro.
+  const topo = (
+    <>
+      <Topo rotulo={rua?.nome ?? area.nome} onTrocar={() => router.push('/area')} />
+      {dadosDoAviso ? <AvisoRegua aviso={dadosDoAviso} onVerPlano={() => router.navigate('/plano')} /> : null}
+    </>
+  );
 
   // 1. Sem dado da situação: o atalho de Emergência continua no topo.
   if (!dadosSituacao || !ruaPronta || (locais.dados === undefined && locais.carregando)) {
@@ -243,7 +275,7 @@ function ConteudoAgora({ area }: { area: Area }) {
 
   const exemplo = avisoDeExemplo();
   const dadoAviso = <Dado rotulo="Aviso" valor={valorDoAviso(avisos)} onPress={() => router.push('/aviso')} />;
-  const dadoRegua = <Dado rotulo="Régua" valor={valorDaRegua(regua)} />;
+  const dadoRegua = <Dado rotulo="Régua" valor={valorDaRegua(leitura, regua.erro !== null, new Date())} />;
   const dadoBairro = <Dado rotulo="Bairro" valor={textoDoBairro(situacaoJunta)} />;
 
   // 7. Treino com resposta.
