@@ -50,7 +50,7 @@ O arquivo `.env` fica fora do repositório (está no `.gitignore`). O `.env.exam
 | Variável | Para que serve |
 | --- | --- |
 | `EXPO_PUBLIC_USE_MOCK` | `true`: INMET, Open-Meteo e a API do bairro usam dados de exemplo. A tela "Trocar área" continua usando a internet. |
-| `EXPO_PUBLIC_API_URL` | Endereço da API do bairro (C#), sem barra no final. Vazio: usa os dados de exemplo. |
+| `EXPO_PUBLIC_API_URL` | Endereço da API do bairro (C#), sem barra no final. A API publicada está em `http://elo-api-fiap.azurewebsites.net`. Vazio: usa os dados de exemplo. |
 
 Nenhum serviço usado exige chave de acesso. As variáveis `EXPO_PUBLIC_*` ficam visíveis dentro do app, por isso nunca devem guardar segredo. Reinicie o Expo depois de mudar o `.env`.
 
@@ -98,7 +98,7 @@ Só serviços gratuitos e sem chave. O acesso à rede fica em `src/services`; as
 | Open-Meteo | Chuva prevista nas próximas 3 horas | **Real**. Com `EXPO_PUBLIC_USE_MOCK=true`, vira previsão fictícia. |
 | BrasilAPI e ViaCEP | CEP para nome da área, código IBGE e coordenadas | **Real**, sempre. |
 | IBGE (serviço de localidades) | Distritos de São Paulo | **Real**, sempre. |
-| API do bairro (C#, repositório `elo-api-csharp`) | Situação das ruas (com percentual "sem o app" e coordenadas), envio da chamada, régua d'água, plano da rua e avisos | **Real** com `EXPO_PUBLIC_API_URL` (por exemplo `http://<ip-da-maquina>:5080`). Sem ela, os dados vêm de `src/mocks` e são fictícios. Contrato em [`docs/contrato-api.md`](docs/contrato-api.md). |
+| API do bairro (C#, repositório `elo-api-csharp`) | Situação das ruas (com percentual "sem o app" e coordenadas), envio da chamada, régua d'água, plano da rua e avisos | **Real** com `EXPO_PUBLIC_API_URL` (a API publicada, `http://elo-api-fiap.azurewebsites.net`, ou `http://<ip-da-maquina>:5080` com a API no computador). Sem ela, os dados vêm de `src/mocks` e são fictícios. Contrato em [`docs/contrato-api.md`](docs/contrato-api.md). |
 | Sensor ESP32 (régua d'água) | Nível da água, com nível de atenção, limite e posição | **Real** quando a API tem leituras; a régua chega ao app pelo `GET /regua` da API, nunca direto. Sem API, exemplo. |
 
 Com `EXPO_PUBLIC_API_URL`, os dados do bairro são reais e as telas deixam de dizer "exemplo". Na aba Bairro, quando há chamada aberta, aparece a linha "Sem o app" (o percentual medido antes do Elo, para comparar com o "Em 15 minutos"), a régua mostra "em atenção" quando a API manda o nível de atenção, e a tela da rua ganha "Ver no mapa" se a API mandou a posição da rua. Todos esses campos são opcionais: com uma API antiga, o app funciona como antes.
@@ -158,7 +158,7 @@ Tirados no simulador de iPhone. Os avisos vêm do INMET; as ruas e os números d
 - **Sem push remoto no Expo Go.** O app não recebe notificação com o app fechado; o aviso chega pela abertura do app ou pelo WhatsApp do bairro.
 - **O JSON do INMET é pesado** (cerca de 580 KB, com polígonos). Em rede ruim a busca pode demorar, e por isso o último aviso fica guardado no celular.
 - **O app não envia SMS sozinho.** Ele abre o app de mensagens do aparelho com o texto pronto, e a pessoa escolhe o destinatário. Aparelho sem SMS (tablet, simulador) mostra uma mensagem clara.
-- **A API do bairro precisa estar no ar para os dados serem reais.** Ela existe (`elo-api-csharp`), mas o app só a usa com `EXPO_PUBLIC_API_URL`; no celular, use o IP da máquina na mesma rede (`http://<ip-da-maquina>:5080`), não `localhost`. Sem ela, os dados são de exemplo.
+- **A API do bairro precisa estar no ar para os dados serem reais.** Ela está publicada em `http://elo-api-fiap.azurewebsites.net` (plano gratuito do Azure: dorme quando fica parada, e a primeira chamada depois disso leva alguns segundos). O app só a usa com `EXPO_PUBLIC_API_URL`; com a API no computador, use o IP da máquina na mesma rede (`http://<ip-da-maquina>:5080`), não `localhost`. Sem ela, os dados são de exemplo.
 - **Sem login e sem chave por aparelho.** Quem tem o endereço da API lê a situação do bairro e envia chamadas. A chave existe só para o ESP32.
 - **"Sem o app" é um valor medido uma vez**, num simulado, e vem pronto da API: o app só mostra. "Ver no mapa" abre o app de mapas do aparelho e depende da posição que a API guarda para a rua; rua sem coordenada não tem o botão.
 - **A régua é uma só no app.** Mesmo com várias na API, o `GET /regua` devolve a régua padrão do bairro.
