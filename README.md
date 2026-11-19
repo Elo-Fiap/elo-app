@@ -151,7 +151,9 @@ Tirados no simulador de iPhone. Os avisos vêm do INMET; as ruas e os números d
 
 ## Vídeo
 
-[preencher]
+O app rodando no simulador de iPhone, do aviso de chuva à resposta da rua (1 min 57 s): https://drive.google.com/file/d/1Qm7KgADtu4WRyNjngkX00K_ASm0eMOcS/view
+
+A narração é a voz do João gerada por IA, a partir de uma amostra da voz dele.
 
 ## Limites conhecidos
 
