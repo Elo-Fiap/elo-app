@@ -4,13 +4,13 @@
 
 | Campo | Resposta |
 | --- | --- |
-| Nome da CitizenTech | Elo (provisório) |
-| Cidade e bairro | São Paulo. Bairro a definir; candidato: Jardim Pantanal |
+| Nome da CitizenTech | Elo |
+| Cidade e bairro | São Paulo, Jardim Pantanal (bairro do piloto) |
 | Cidadão beneficiado | Moradores de ruas que alagam, por meio da liderança da rua ou do voluntário do núcleo comunitário de Defesa Civil |
 | Problema, em uma frase | Durante a chuva forte, quem cuida do bairro não consegue saber quais ruas estão bem, quais precisam de ajuda e quais ficaram em silêncio. |
 | Como funciona | O aviso oficial chega ao coordenador, a liderança de cada rua responde em um toque, mesmo com internet ruim, e o painel destaca as ruas sem resposta. Um sensor mede a água no ponto crítico. |
 | O que cada parte faz | App: aviso, chamada, plano e registro. API: guarda as chamadas e ordena as ruas em silêncio. ESP32: mede a água e toca o buzzer. ML: indica o nível de atenção por subprefeitura. Segurança: evita vazamento do que é digitado. Linux: hospeda a API. Testes: requisitos e casos de teste. |
-| Link do repositório | [preencher] |
+| Link do repositório | https://github.com/Elo-Fiap/elo-app |
 | Indicador de impacto | Percentual de ruas com situação conhecida em 15 minutos, comparando o simulado sem e com o app |
 | ODS conectados | ODS 11 (meta 11.5) e ODS 13 (meta 13.1) |
 
@@ -20,11 +20,11 @@ App da CitizenTech **Elo**, feito para a Global Solution 2026.2 da FIAP (discipl
 
 | Nome | RM |
 | --- | --- |
-| João | [preencher] |
-| Bruno | [preencher] |
-| Rodrigo | [preencher] |
-| Lucca | [preencher] |
-| Ruan | [preencher] |
+| Bruno Leão | RM555563 |
+| João Victor Franco | RM556790 |
+| Lucca Borges | RM554608 |
+| Rodrigo Jimenez | RM558148 |
+| Ruan Melo | RM557599 |
 
 ## Como rodar
 
@@ -139,7 +139,7 @@ O app serve ao ODS 11 (meta 11.5, reduzir mortes e perdas por desastres) e ao OD
 
 ## Prints
 
-Tirados no simulador de iPhone. Os avisos vêm do INMET; as ruas e os números do bairro são de exemplo. Refaçam os prints antes da entrega, quando o app estiver final.
+Tirados no simulador de iPhone. Os avisos vêm do INMET; as ruas e os números do bairro são de exemplo.
 
 | Primeiro uso | Agora | Preciso de ajuda | Recebido |
 |---|---|---|---|
